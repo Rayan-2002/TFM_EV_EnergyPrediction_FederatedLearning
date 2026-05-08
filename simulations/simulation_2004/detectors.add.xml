@@ -1,0 +1,12 @@
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+    <!-- Detectors -->
+    <!-- 2004 Numancia / Marques de Sentmenat (sentit mar) -->
+    <inductionLoop id="Numancia" lane="237805207#6_0" pos="2.76" period="900"
+        file="AM_2004c.xml"/>
+    <inductionLoop id="Numancia1" lane="237805207#6_3" pos="3.31" period="900"
+        file="AM_2004.xml"/>
+    <inductionLoop id="Numancia2" lane="237805207#6_2" pos="3.06" period="900"
+        file="AM_2004a.xml"/>
+    <inductionLoop id="Numancia3" lane="237805207#6_1" pos="3.52" period="900"
+        file="AM_2004b.xml"/>
+</additional>

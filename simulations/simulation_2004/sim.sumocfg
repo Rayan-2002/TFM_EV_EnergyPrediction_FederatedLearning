@@ -1,0 +1,16 @@
+<configuration>
+        <input>
+            <net-file value="osm.net.xml"/>
+            <additional-files value="detectors.add.xml"/>
+            <route-files value="24h_routes.rou.xml"/>
+        </input>
+        
+        <time>
+            <begin value="0"/>
+            <end value = "86400"/>
+        </time>
+        
+        <processing>
+            <time-to-teleport value="300"/>
+        </processing>
+    </configuration>
