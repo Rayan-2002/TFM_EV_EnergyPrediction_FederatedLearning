@@ -3,7 +3,6 @@
 import os
 import sys
 import math
-from turtle import speed
 
 # For pandas dataframe
 import pandas as pd
@@ -19,28 +18,26 @@ print(f"SUMO_HOME is set to: {os.environ['SUMO_HOME']}")
 tools_path = os.path.join(os.environ["SUMO_HOME"], "tools")
 if tools_path not in sys.path:
     sys.path.append(tools_path)
-
 print(f"SUMO tools path: {tools_path}")
-
 
 import traci
 import sumolib
 
 
-# Physics constants from the proposal
+# Physics constants from the proposal using Tesla Model 3 as reference.
 
-MASS = 1500.0                 # kg
+MASS = 1823.0                 # kg
 GRAVITY = 9.81                # m/s²
 DRIVETRAIN_EFFICIENCY = 0.90  # eta
-ROAD_GRADE_ANGLE = 0.0        # theta, radians. Temporary flat-road assumption
 ROLLING_COEFF = 0.01          # C_r
 AIR_DENSITY = 1.225           # rho, kg/m³
-DRAG_COEFF = 0.29             # C_d
+DRAG_COEFF = 0.225             # C_d
 FRONTAL_AREA = 2.2            # A, m²
-AUXILIARY_POWER = 500.0       # P_aux, watts
+AUXILIARY_POWER = 1000      # P_aux, watts
+# ROAD_GRADE_ANGLE = 0.0      theta, radians. Temporary flat-road assumption
 
 
-def compute_power(speed, acceleration):
+def compute_power(speed, acceleration, road_grade_angle):
     """
     Compute instantaneous vehicle power P(t) using the proposal formula:
 
@@ -59,8 +56,8 @@ def compute_power(speed, acceleration):
     """
 
     inertial_force = MASS * acceleration
-    gravitational_force = MASS * GRAVITY * math.sin(ROAD_GRADE_ANGLE)
-    rolling_force = MASS * GRAVITY * ROLLING_COEFF * math.cos(ROAD_GRADE_ANGLE)
+    gravitational_force = MASS * GRAVITY * math.sin(road_grade_angle)
+    rolling_force = MASS * GRAVITY * ROLLING_COEFF * math.cos(road_grade_angle)
     aerodynamic_force = 0.5 * AIR_DENSITY * FRONTAL_AREA * DRAG_COEFF * speed ** 2
 
     total_force = (
@@ -99,7 +96,7 @@ def main():
 
     sumo_binary = sumolib.checkBinary("sumo")
 
-    SIMULATION_END = 60
+    SIMULATION_END = 120 # seconds.
     sumo_cmd = [
         sumo_binary,
         "-c", config_file,
@@ -123,6 +120,7 @@ def main():
         current_time = traci.simulation.getTime()
         vehicle_ids = traci.vehicle.getIDList()
 
+        # Log progress every 10 steps. Used for debugging and monitoring long simulations.
         if step_count % 10 == 0:
             print(
                 f"Step {step_count}, "
@@ -134,6 +132,8 @@ def main():
         for veh_id in vehicle_ids:
             speed = traci.vehicle.getSpeed(veh_id)
             acceleration = traci.vehicle.getAcceleration(veh_id)
+            slope_degrees = traci.vehicle.getSlope(veh_id)
+            road_grade_angle = math.radians(slope_degrees)
             x, y = traci.vehicle.getPosition(veh_id)
             edge_id = traci.vehicle.getRoadID(veh_id)
             lane_id = traci.vehicle.getLaneID(veh_id) 
@@ -144,7 +144,7 @@ def main():
             if abs(acceleration) > 1.0:
                 continue
 
-            signed_power = compute_power(speed, acceleration)
+            signed_power = compute_power(speed, acceleration, road_grade_angle)
 
             # Energy-consumption target: non-negative power only
             consumption_power = max(signed_power, 0.0)
@@ -154,6 +154,8 @@ def main():
                 "vehicle_id": veh_id,
                 "speed": speed,
                 "acceleration": acceleration,
+                "slope_degrees": slope_degrees,
+                "road_grade_angle": road_grade_angle,
                 "x": x,
                 "y": y,
                 "edge_id": edge_id,
@@ -161,8 +163,6 @@ def main():
                 "signed_power_watts": signed_power,
                 "consumption_power_watts": consumption_power
             })
-
-            
 
     traci.close()
 
