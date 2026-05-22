@@ -4,11 +4,12 @@ import torch.nn as nn
 
 def main():
     # We manually define the dimensions
-    batch_size = 4
-    sequence_length = 10
-    num_features = 3
-    hidden_size = 8
-    num_layers = 1
+
+    batch_size = 4 # Number of samples in a batch
+    sequence_length = 5 # Number of timesteps in each sample
+    num_features = 3 # Number of features at each timestep (e.g. 3 could be x, y, z coordinates)
+    hidden_size = 8 # Number of hidden units in the LSTM layer
+    num_layers = 1 # Number of LSTM layers (for simplicity, we use 1 layer here)
 
     # Create fake data
     x = torch.randn(batch_size, sequence_length, num_features)
