@@ -4,21 +4,19 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 import matplotlib.pyplot as plt
 
+# Generate sin wave dataset 
 
+wave = torch.linspace(0, 20, steps = 100)
+data = torch.sin(wave)
 
-# Generate synthetic sine wave data
-def generate_sine_wave_data(num_points=1000):
-    x = np.linspace(0, 100, num_points)
-    y = np.sin(x)
-    return y.astype(np.float32)
-
+# print(data.shape)
+# print(data)
 
 # Create Pytorch Dataset
 class SineWaveDataset(Dataset):
     def __init__(self, data, sequence_length):
         self.data = data
         self.sequence_length = sequence_length
-
 
     def __len__(self):
         return len(self.data) - self.sequence_length
@@ -29,13 +27,35 @@ class SineWaveDataset(Dataset):
 
         # LSTM expects: (sequence_length, num_features)
         # Here num_features = 1 because we only have sine value
-        x = torch.tensor(x, dtype=torch.float32).unsqueeze(-1)
-        y = torch.tensor(y, dtype=torch.float32)
+        x = x.float().unsqueeze(-1)
+        y = y.float()
 
         return x, y
+    
+
+# Instantiate the dataset
+sequence_length = 10
+dataset = SineWaveDataset(data, sequence_length)
 
 
-class LSTMForecaster(nn.Module):
+print(f"Number of samples in dataset: {len(dataset)}")
+sample_X, sample_y = dataset[0]
+print(f"Sample X shape: {sample_X.shape}")
+print(f"Sample y shape: {sample_y.shape}")
+
+# Create DataLoader
+loader = DataLoader(dataset, batch_size=16, shuffle=False)
+
+# Inspect batch shapes
+batch_x, batch_y = next(iter(loader))
+
+print(f"Batch X shape: {batch_x.shape}")
+print(f"Batch y shape: {batch_y.shape}")
+
+# Create the LSTM model
+# inside : nn.LSTM and nn.Linear
+
+class LSTMModel(nn.Module):
     def __init__(self, input_size=1, hidden_size=32, output_size=1):
         super().__init__()
 
@@ -66,7 +86,7 @@ def main():
 
     # Generate sine wave
     x_values = np.linspace(0, 100, 1000)
-    data = np.sin(x_values).astype(np.float32)
+    data = torch.tensor(np.sin(x_values).astype(np.float32))
 
     # Split into train and test
     train_size = int(len(data) * 0.8)
@@ -81,7 +101,7 @@ def main():
     train_loader = DataLoader(
         train_dataset,
         batch_size=batch_size,
-        shuffle=True
+        shuffle=False
     )
 
     test_loader = DataLoader(
@@ -91,7 +111,7 @@ def main():
     )
 
     # Create model
-    model = LSTMForecaster(
+    model = LSTMModel(
         input_size=1,
         hidden_size=32,
         output_size=1
@@ -152,5 +172,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+    
+
+
+    
 
 
