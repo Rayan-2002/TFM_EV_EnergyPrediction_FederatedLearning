@@ -96,7 +96,7 @@ def main():
 
     sumo_binary = sumolib.checkBinary("sumo")
 
-    SIMULATION_END = 120 # seconds.
+    SIMULATION_END = 5 * 60 # 5 minutes.
     sumo_cmd = [
         sumo_binary,
         "-c", config_file,
