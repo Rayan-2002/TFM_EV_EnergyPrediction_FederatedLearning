@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # Generate sin wave dataset 
 
-wave = torch.linspace(0, 20, steps = 100)
+wave = torch.linspace(0, 20, steps = 200)
 data = torch.sin(wave)
 
 # print(data.shape)
@@ -56,7 +56,7 @@ print(f"Batch y shape: {batch_y.shape}")
 # inside : nn.LSTM and nn.Linear
 
 class LSTMModel(nn.Module):
-    def __init__(self, input_size=1, hidden_size=32, output_size=1):
+    def __init__(self, input_size=1, hidden_size=64, output_size=1):
         super().__init__()
 
         self.lstm = nn.LSTM(

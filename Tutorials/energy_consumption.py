@@ -19,8 +19,8 @@ data = (data - np.min(data)) / (np.max(data) - np.min(data))
 data = torch.tensor(data, dtype=torch.float32)
 
 # Create sequences and targets
-window_size = 5  # Using past 5 time steps to predict the next time step
-
+window_size = 10  # Using past 10 time steps to predict the next time step
+# changed from 5 to 10 and saw a little improvement
 
 def create_sequences(data, window_size):
     sequences = []
@@ -87,9 +87,10 @@ class EnergyLSTM(nn.Module):
 
 model = EnergyLSTM(input_size=1, hidden_size=64)
 criterion = nn.MSELoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+# Changed from 0.001 to 0.01 and saw a significant improvement in convergence speed
 
-epochs = 20
+epochs = 30
 
 for epoch in range(epochs):
     model.train()

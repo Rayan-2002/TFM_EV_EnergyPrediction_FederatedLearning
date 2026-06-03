@@ -96,7 +96,7 @@ def main():
 
     sumo_binary = sumolib.checkBinary("sumo")
 
-    SIMULATION_END = 5 * 60 # 5 minutes.
+    SIMULATION_END = 10 * 60 # 10 minutes.
     sumo_cmd = [
         sumo_binary,
         "-c", config_file,
@@ -141,7 +141,7 @@ def main():
             if speed < 0:
                 continue
 
-            if abs(acceleration) > 1.0:
+            if abs(acceleration) > 5.0:
                 continue
 
             signed_power = compute_power(speed, acceleration, road_grade_angle)
