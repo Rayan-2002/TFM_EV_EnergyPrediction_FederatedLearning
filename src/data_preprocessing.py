@@ -6,6 +6,7 @@ import numpy as np
 
 import torch
 from torch.utils.data import Dataset, DataLoader
+import torch.nn as nn
 
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
@@ -17,16 +18,10 @@ from sklearn.model_selection import train_test_split
 
 DATASET_PATH = "/home/rayan/Internship/SUMO_Barcelona/dataset"
 
-# We will take 10 clients for the centralized model
 NUM_CLIENTS = 10
 
-# Time settings
 T_PAST_SECONDS = 10
 T_FUTURE_SECONDS = 5
-
-# If one row = one second, this is 1.
-# If your SUMO simulation exports every 0.5 seconds, set this to 0.5.
-# If every 0.1 seconds, set this to 0.1.
 TIME_STEP_SECONDS = 1.0
 
 BATCH_SIZE = 32
@@ -56,7 +51,6 @@ def load_sumo_csvs(dataset_path):
     for file_path in selected_files:
         df = pd.read_csv(file_path)
 
-        # Keep track of the source client
         client_id = os.path.basename(file_path).replace(".csv", "")
         df["client_id"] = client_id
 
@@ -94,10 +88,8 @@ missing_columns = [col for col in required_columns if col not in df.columns]
 if missing_columns:
     raise ValueError(f"Missing required columns: {missing_columns}")
 
-# Keep useful physical features + client id
 df = df[required_columns + ["client_id"]]
 
-# Remove NaN or infinite values
 df = df.replace([np.inf, -np.inf], np.nan)
 df = df.dropna()
 
@@ -115,7 +107,6 @@ train_df, test_df = train_test_split(
     shuffle=False
 )
 
-# We normalize all four variables: v, a, theta, P
 feature_columns = ["v", "a", "theta", "P"]
 
 scaler = MinMaxScaler()
@@ -184,11 +175,9 @@ class SUMOSlidingWindowDataset(Dataset):
         return len(self.data) - self.total_window_size + 1
 
     def __getitem__(self, index):
-        # Past window
         past_start = index
         past_end = index + self.past_steps
 
-        # Future window
         future_start = past_end
         future_end = future_start + self.future_steps
 
@@ -246,7 +235,7 @@ print("Number of testing samples:", len(test_dataset))
 
 
 # ============================================================
-# 7. Sanity check
+# 7. Data sanity check
 # ============================================================
 
 for X_batch, Y_batch in train_loader:
@@ -260,3 +249,209 @@ for X_batch, Y_batch in train_loader:
     print(Y_batch[0])
 
     break
+
+
+# ============================================================
+# 8. LSTM Model Architecture
+# ============================================================
+
+class GoldStandardLSTM(nn.Module):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        num_layers,
+        output_size=1,
+        dropout=0.0
+    ):
+        super(GoldStandardLSTM, self).__init__()
+
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+
+        self.lstm = nn.LSTM(
+            input_size=input_size,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=dropout if num_layers > 1 else 0.0
+        )
+
+        self.fc = nn.Linear(
+            in_features=hidden_size,
+            out_features=output_size
+        )
+
+    def forward(self, x):
+        lstm_out, (hidden_state, cell_state) = self.lstm(x)
+
+        last_hidden_state = lstm_out[:, -1, :]
+
+        prediction = self.fc(last_hidden_state)
+
+        prediction = prediction.squeeze(-1)
+
+        return prediction
+
+
+# ============================================================
+# 9. Model initialization
+# ============================================================
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+input_size = len(feature_columns)
+hidden_size = 64
+num_layers = 1
+output_size = 1
+dropout = 0.0
+
+model = GoldStandardLSTM(
+    input_size=input_size,
+    hidden_size=hidden_size,
+    num_layers=num_layers,
+    output_size=output_size,
+    dropout=dropout
+).to(device)
+
+print(model)
+print("Using device:", device)
+
+
+# ============================================================
+# 10. Model sanity check
+# ============================================================
+
+for X_batch, Y_batch in train_loader:
+    X_batch = X_batch.to(device)
+    Y_batch = Y_batch.to(device)
+
+    Y_pred = model(X_batch)
+
+    print("X batch shape:", X_batch.shape)
+    print("Y batch shape:", Y_batch.shape)
+    print("Y pred shape:", Y_pred.shape)
+
+    break
+
+
+
+# ============================================================
+# 11. Training configuration
+# ============================================================
+
+LEARNING_RATE = 0.001
+NUM_EPOCHS = 50
+
+criterion = nn.MSELoss()
+
+optimizer = torch.optim.Adam(
+    model.parameters(),
+    lr=LEARNING_RATE
+)
+
+
+# ============================================================
+# 12. Centralized training loop
+# ============================================================
+
+train_losses = []
+test_losses = []
+
+for epoch in range(NUM_EPOCHS):
+    # ----------------------------
+    # Training phase
+    # ----------------------------
+    model.train()
+
+    running_train_loss = 0.0
+
+    for X_batch, Y_batch in train_loader:
+        X_batch = X_batch.to(device)
+        Y_batch = Y_batch.to(device)
+
+        # Reset gradients
+        optimizer.zero_grad()
+
+        # Forward pass
+        Y_pred = model(X_batch)
+
+        # Compute loss
+        loss = criterion(Y_pred, Y_batch)
+
+        # Backpropagation
+        loss.backward()
+
+        # Update model parameters
+        optimizer.step()
+
+        running_train_loss += loss.item()
+
+    average_train_loss = running_train_loss / len(train_loader)
+    train_losses.append(average_train_loss)
+
+    # ----------------------------
+    # Test phase
+    # ----------------------------
+    model.eval()
+
+    running_test_loss = 0.0
+
+    with torch.no_grad():
+        for X_batch, Y_batch in test_loader:
+            X_batch = X_batch.to(device)
+            Y_batch = Y_batch.to(device)
+
+            Y_pred = model(X_batch)
+
+            loss = criterion(Y_pred, Y_batch)
+
+            running_test_loss += loss.item()
+
+    average_test_loss = running_test_loss / len(test_loader)
+    test_losses.append(average_test_loss)
+
+    train_rmse = np.sqrt(average_train_loss)
+    test_rmse = np.sqrt(average_test_loss)
+
+    print(
+        f"Epoch [{epoch + 1}/{NUM_EPOCHS}] "
+        f"Train MSE: {average_train_loss:.6f} | "
+        f"Train RMSE: {train_rmse:.6f} | "
+        f"Test MSE: {average_test_loss:.6f} | "
+        f"Test RMSE: {test_rmse:.6f}"
+    )
+
+
+# ============================================================
+# 13. Final evaluation
+# ============================================================
+
+final_train_mse = train_losses[-1]
+final_test_mse = test_losses[-1]
+
+final_train_rmse = np.sqrt(final_train_mse)
+final_test_rmse = np.sqrt(final_test_mse)
+
+print("\nFinal results:")
+print(f"Final Train RMSE: {final_train_rmse:.6f}")
+print(f"Final Test RMSE: {final_test_rmse:.6f}")
+
+import matplotlib.pyplot as plt
+
+# ============================================================
+# 14. Plot training and test loss
+# ============================================================
+
+plt.figure(figsize=(10, 5))
+
+plt.plot(train_losses, label="Train MSE")
+plt.plot(test_losses, label="Test MSE")
+
+plt.xlabel("Epoch")
+plt.ylabel("MSE Loss")
+plt.title("Training and Test Loss During Centralized Training")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
