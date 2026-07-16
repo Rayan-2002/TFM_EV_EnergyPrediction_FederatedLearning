@@ -67,4 +67,4 @@ dist/
 # misc
 # =========================
 *.log
-*.lock
+*.lockoutputs/*.pkl
