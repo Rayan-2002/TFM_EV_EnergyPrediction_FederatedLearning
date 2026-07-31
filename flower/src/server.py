@@ -12,7 +12,15 @@ from flwr.common import Context, Metrics
 
 # This works when the server is launched with:
 # python src/server.py
-from client import FlowerClient
+import pandas as pd
+
+from client import (
+    FlowerClient,
+    FEATURE_COLUMNS,
+    TARGET_COLUMN,
+    T_PAST,
+    T_FUTURE,
+)
 
 
 # ============================================================
@@ -35,32 +43,87 @@ OUTPUT_DIR = FLOWER_ROOT / "outputs"
 
 def discover_client_ids() -> List[int]:
     """
-    Find all files named client_<id>.csv.
-
-    Example:
-        client_0.csv
-        client_1.csv
-        client_168.csv
-
-    client_mapping.csv is ignored because its suffix is not numeric.
+    Discover client CSV files that contain enough valid rows
+    to produce both training and validation temporal windows.
     """
 
-    client_ids: List[int] = []
+    valid_client_ids: List[int] = []
+    skipped_clients = []
+
+    required_columns = list(
+        dict.fromkeys(FEATURE_COLUMNS + [TARGET_COLUMN])
+    )
+
+    # Two windows are required so that both training and
+    # validation sets contain at least one example.
+    minimum_windows = 2
 
     for csv_path in DATASET_DIR.glob("client_*.csv"):
         suffix = csv_path.stem.removeprefix("client_")
 
-        if suffix.isdigit():
-            client_ids.append(int(suffix))
+        if not suffix.isdigit():
+            continue
 
-    client_ids.sort()
+        client_id = int(suffix)
 
-    if not client_ids:
-        raise FileNotFoundError(
-            f"No client_<id>.csv files found in {DATASET_DIR}"
+        try:
+            df = pd.read_csv(
+                csv_path,
+                usecols=required_columns,
+            )
+
+            usable_rows = len(
+                df.dropna(subset=required_columns)
+            )
+
+            num_windows = (
+                usable_rows
+                - T_PAST
+                - T_FUTURE
+                + 1
+            )
+
+            if num_windows < minimum_windows:
+                skipped_clients.append(
+                    (
+                        client_id,
+                        usable_rows,
+                        max(num_windows, 0),
+                    )
+                )
+                continue
+
+            valid_client_ids.append(client_id)
+
+        except (ValueError, pd.errors.EmptyDataError) as error:
+            skipped_clients.append(
+                (client_id, 0, f"invalid CSV: {error}")
+            )
+
+    valid_client_ids.sort()
+    skipped_clients.sort(key=lambda item: item[0])
+
+    print(
+        f"Usable client datasets: {len(valid_client_ids)}"
+    )
+    print(
+        f"Skipped client datasets: {len(skipped_clients)}"
+    )
+
+    for client_id, usable_rows, reason in skipped_clients:
+        print(
+            f"  Skipping client {client_id}: "
+            f"{usable_rows} usable rows, "
+            f"{reason} temporal windows"
         )
 
-    return client_ids
+    if not valid_client_ids:
+        raise FileNotFoundError(
+            "No client CSV contains enough data to create "
+            "training and validation temporal windows."
+        )
+
+    return valid_client_ids
 
 
 # ============================================================
