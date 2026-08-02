@@ -1,0 +1,24 @@
+{
+  "feature_columns": [
+    "speed",
+    "acceleration",
+    "road_grade_angle",
+    "consumption_power_watts"
+  ],
+  "feature_mean": [
+    6.154452047609201,
+    -0.0011422669216329922,
+    0.0,
+    8528.733916986273
+  ],
+  "feature_std": [
+    4.26681423189829,
+    1.2430993287789094,
+    1.0,
+    11966.818482242456
+  ],
+  "target_column": "consumption_power_watts",
+  "target_mean": 8628.37271710797,
+  "target_std": 8228.903207182697,
+  "computed_from": "all selected training windows only"
+}

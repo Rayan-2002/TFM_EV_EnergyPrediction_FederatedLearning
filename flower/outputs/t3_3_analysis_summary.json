@@ -1,0 +1,52 @@
+{
+  "baseline_val_rmse": {
+    "first": 12335.17534793071,
+    "final": 12327.58016495317,
+    "best": 10124.449450947079,
+    "best_round_index_1_based": 3,
+    "mean": 11716.193980149423,
+    "standard_deviation": 769.4558421590685,
+    "mean_absolute_round_change": 865.6147874181902,
+    "final_minus_first": -7.595182977540389
+  },
+  "non_iid_global_val_rmse": {
+    "first": 11971.958057381604,
+    "final": 11971.171221050017,
+    "best": 11971.171221050017,
+    "best_round_index_1_based": 20,
+    "mean": 11971.50737508628,
+    "standard_deviation": 0.2645453068279741,
+    "mean_absolute_round_change": 0.04141243850455411,
+    "final_minus_first": -0.7868363315865281
+  },
+  "non_iid_calm_val_rmse": {
+    "first": 11711.181060126659,
+    "final": 11710.386050390018,
+    "best": 11710.386050390018,
+    "best_round_index_1_based": 20,
+    "mean": 11710.725696001293,
+    "standard_deviation": 0.2673032561707292,
+    "mean_absolute_round_change": 0.04184261771795144,
+    "final_minus_first": -0.7950097366410773
+  },
+  "non_iid_aggressive_val_rmse": {
+    "first": 12108.186816848038,
+    "final": 12107.404031077634,
+    "best": 12107.404031077634,
+    "best_round_index_1_based": 20,
+    "mean": 12107.738454773471,
+    "standard_deviation": 0.26317837443067926,
+    "mean_absolute_round_change": 0.041199251073856816,
+    "final_minus_first": -0.7827857704032795
+  },
+  "non_iid_profile_gap": {
+    "first": 397.00575672137893,
+    "final": 397.0179806876167,
+    "best": 397.00575672137893,
+    "best_round_index_1_based": 1,
+    "mean": 397.0127587721794,
+    "standard_deviation": 0.004130099173455082,
+    "mean_absolute_round_change": 0.0006675449309879791,
+    "final_minus_first": 0.012223966237797868
+  }
+}
