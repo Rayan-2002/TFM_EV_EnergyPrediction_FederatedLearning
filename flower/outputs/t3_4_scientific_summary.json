@@ -1,0 +1,38 @@
+{
+  "task": "T3.4 Scientific Synthesis",
+  "comparison_design": {
+    "centralized_history": "outputs/t3_4_controlled_centralized_history.json",
+    "federated_history": "outputs/t3_3_controlled_non_iid_82_clients_20_rounds.json",
+    "centralized_selection": "best",
+    "same_fixed_evaluation_examples": true,
+    "evaluation_examples": 2949,
+    "rmse_unit": "watts"
+  },
+  "centralized_baseline": {
+    "rmse_w": 5965.9245307222345,
+    "selected_epoch": 24
+  },
+  "federated": {
+    "label": "Federated FedAvg (controlled non-IID)",
+    "initial_round": 0,
+    "initial_rmse_w": 7674.0613034945945,
+    "final_round": 20,
+    "final_rmse_w": 6460.825514193669,
+    "best_round": 20,
+    "best_rmse_w": 6460.825514193669,
+    "improvement_w": 1213.2357893009257,
+    "improvement_percent": 15.809566034460076
+  },
+  "comparison": {
+    "final_federated_minus_centralized_w": 494.9009834714343,
+    "final_relative_gap_percent": 8.295461682810151,
+    "best_federated_minus_centralized_w": 494.9009834714343,
+    "best_federated_reached_or_beat_centralized": false
+  },
+  "outputs": {
+    "plot_png": "outputs/t3_4_centralized_vs_federated_rmse.png",
+    "plot_pdf": "outputs/t3_4_centralized_vs_federated_rmse.pdf",
+    "comparison_csv": "outputs/t3_4_rmse_per_round.csv",
+    "three_line_plot_png": "outputs/t3_4_centralized_iid_non_iid_rmse.png"
+  }
+}
